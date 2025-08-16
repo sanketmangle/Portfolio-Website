@@ -1,0 +1,528 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>My Professional Portfolio</title>
+    <!-- Firebase SDKs -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInAnonymously, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, collection, addDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        // Firebase Initialization and Authentication
+        const firebaseConfig = JSON.parse(typeof __firebase_config !== 'undefined' ? __firebase_config : '{}');
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        window.db = getFirestore(app);
+
+        // Authenticate with custom token or anonymously
+        const signIn = async () => {
+            const token = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
+            try {
+                if (token) {
+                    await signInWithCustomToken(auth, token);
+                } else {
+                    await signInAnonymously(auth);
+                }
+            } catch (error) {
+                console.error("Firebase authentication error:", error);
+            }
+        };
+        signIn();
+
+        // Expose Firebase functions to the global scope for use in the script tag
+        window.addContact = async (data) => {
+            try {
+                const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+                const userId = auth.currentUser?.uid || 'anonymous';
+                const docRef = await addDoc(collection(window.db, `artifacts/${appId}/users/${userId}/contact_form_submissions`), data);
+                console.log("Document written with ID: ", docRef.id);
+                return { success: true, message: "Message sent successfully!" };
+            } catch (e) {
+                console.error("Error adding document: ", e);
+                return { success: false, message: "Error sending message. Please try again." };
+            }
+        };
+    </script>
+
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* Import 'Inter' font from Google Fonts */
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap');
+        body {
+            font-family: 'Inter', sans-serif;
+            transition: background-color 0.3s ease;
+            background: linear-gradient(to right bottom, #f0f2f5, #bfdbfe);
+            color: #1f2937;
+        }
+
+        /* Apply dynamic colors */
+        .page-container {
+            background-color: #ffffff;
+            color: #1f2937;
+        }
+        .section-header {
+            color: #4f46e5;
+            border-bottom-color: #e5e7eb;
+        }
+        .hero-section {
+            background-color: #e5e7eb;
+        }
+        .hero-title {
+            color: #1f2937;
+        }
+        .hero-subtitle {
+            color: #374151;
+        }
+        .accent-text {
+            color: #4f46e5;
+        }
+        .primary-button {
+            background-color: #4f46e5;
+            color: white;
+        }
+        .secondary-button {
+            background-color: #e5e7eb;
+            color: #4f46e5;
+        }
+        .project-card, .job-entry, .skill-badge, .contact-form-bg {
+            background-color: #e5e7eb;
+        }
+        .card-header, .job-header {
+            color: #4f46e5;
+        }
+        .card-text, .job-text, .contact-text {
+            color: #1f2937;
+        }
+        .contact-links {
+            color: #4f46e5;
+        }
+        .form-input {
+            background-color: #ffffff;
+            color: #1f2937;
+        }
+
+        /* Custom scrollbar for a cleaner look */
+        ::-webkit-scrollbar {
+            height: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #e5e7eb;
+            border-radius: 10px;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #93c5fd;
+            border-radius: 10px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #60a5fa;
+        }
+        
+        /* Hide default scrollbar but allow scrolling functionality */
+        .hide-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+        .hide-scrollbar {
+            -ms-overflow-style: none; /* IE and Edge */
+            scrollbar-width: none; /* Firefox */
+        }
+
+        /* Set a fixed height for the container to prevent CLS */
+        #projects-container {
+            height: 600px; /* Adjust as needed to fit content */
+            gap: 0; /* Remove gap for one project per view */
+        }
+
+        /* Styling for the project cards */
+        .project-card {
+            flex-shrink: 0;
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-start;
+        }
+
+        /* Animations for sections */
+        .fade-in-up {
+            opacity: 0;
+            transform: translateY(20px);
+            transition: opacity 0.6s ease-out, transform 0.6s ease-out;
+        }
+
+        .fade-in-up.visible {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        /* Navigation Bar Styling */
+        .navbar {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            z-index: 100;
+            background-color: rgba(255, 255, 255, 0.7); /* Light, transparent white */
+            backdrop-filter: blur(5px); /* Optional: add a blur effect */
+            transition: background-color 0.3s ease-in-out, box-shadow 0.3s ease-in-out;
+        }
+
+        .navbar.scrolled {
+            background-color: rgba(255, 255, 255, 0.9); /* Slightly less transparent when scrolled */
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+        }
+
+        .navbar-content {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 1rem;
+            max-width: 1024px;
+            margin: 0 auto;
+        }
+
+        @media (max-width: 640px) {
+            .navbar-links {
+                display: none;
+                flex-direction: column;
+                width: 100%;
+                text-align: center;
+            }
+            .navbar-links.active {
+                display: flex;
+            }
+        }
+    </style>
+</head>
+<body class="antialiased">
+    <!-- Fixed Navigation Bar -->
+    <nav class="navbar">
+        <div class="navbar-content">
+            <a href="#hero" class="text-xl font-bold accent-text">Sanket Mangle</a>
+            <button id="mobile-menu-toggle" class="sm:hidden text-blue-600">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16m-7 6h7"></path></svg>
+            </button>
+            <div id="navbar-links" class="navbar-links hidden sm:flex sm:space-x-8">
+                <a href="#about" class="text-base sm:text-lg font-medium py-1 accent-text">About</a>
+                <a href="#experience" class="text-base sm:text-lg font-medium py-1 accent-text">Experience</a>
+                <a href="#skills" class="text-base sm:text-lg font-medium py-1 accent-text">Skills</a>
+                <a href="#projects" class="text-base sm:text-lg font-medium py-1 accent-text">Projects</a>
+                <a href="#contact" class="text-base sm:text-lg font-medium py-1 accent-text">Contact</a>
+            </div>
+        </div>
+    </nav>
+    
+    <div class="min-h-screen flex flex-col items-center justify-center p-4 sm:p-6 md:p-8">
+        <!-- Main container, centered with subtle shadow and rounded corners -->
+        <div class="page-container shadow-2xl rounded-2xl p-6 sm:p-8 md:p-12 max-w-5xl w-full transform transition-all duration-300 hover:scale-[1.01]">
+
+            <!-- Hero Section -->
+            <section id="hero" class="text-center mb-12 sm:mb-16 p-6 sm:p-8 rounded-xl shadow-inner fade-in-up hero-section">
+                <img src="https://placehold.co/150x150/93c5fd/ffffff?text=Your+Photo" alt="Your Profile Photo" class="w-32 h-32 sm:w-44 sm:h-44 rounded-full mx-auto mb-4 sm:mb-6 border-4 sm:border-6 border-blue-400 shadow-lg object-cover">
+                <h1 class="text-4xl sm:text-5xl md:text-6xl font-extrabold mb-2 sm:mb-4 leading-tight hero-title">Hello, I'm <span class="accent-text">Sanket Mangle</span></h1>
+                <p id="headline" class="text-lg sm:text-xl md:text-2xl mb-4 sm:mb-6 hero-subtitle">A passionate <span class="font-semibold accent-text">IT Project Manager</span></p>
+                <div class="flex justify-center mt-4">
+                    <button onclick="generateHeadline()" class="primary-button hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-full shadow-lg transition-transform transform hover:scale-105 duration-300 text-sm">
+                        ✨ Generate Headline
+                    </button>
+                </div>
+                <p class="text-base sm:text-lg max-w-2xl mx-auto mt-4 card-text">
+                    Experienced IT Project Manager with a proven track record in managing critical applications and leading successful infrastructure migration projects.
+                </p>
+                <div class="mt-6 sm:mt-8 flex flex-col sm:flex-row justify-center space-y-3 sm:space-y-0 sm:space-x-4">
+                    <a href="#contact" class="primary-button hover:bg-blue-700 text-white font-bold py-2 px-6 sm:py-3 sm:px-8 rounded-full shadow-lg transition-transform transform hover:scale-105 duration-300 text-sm sm:text-base">
+                        Contact Me
+                    </a>
+                    <a href="#projects" class="secondary-button hover:bg-gray-300 text-blue-700 font-bold py-2 px-6 sm:py-3 sm:px-8 rounded-full shadow-lg transition-transform transform hover:scale-105 duration-300 text-sm sm:text-base">
+                        View Projects
+                    </a>
+                </div>
+            </section>
+
+            <!-- About Me Section -->
+            <section id="about" class="mb-12 sm:mb-16 fade-in-up">
+                <h2 class="text-3xl sm:text-4xl font-bold mb-6 sm:mb-8 border-b-4 border-blue-300 pb-2 sm:pb-3 text-center section-header">About Me</h2>
+                <div class="text-base sm:text-lg leading-relaxed grid grid-cols-1 md:grid-cols-2 gap-6 sm:gap-8 card-text">
+                    <div id="about-content">
+                        <p class="mb-4">
+                            I am an IT professional with expertise in Java, SQL, HTML5, CSS3, JavaScript, XML, Spring Boot, and AWS.
+                        </p>
+                        <p class="mb-4">
+                            I demonstrate solid problem-solving skills, am an effective communicator, and a collaborative team player. I am seeking to contribute innovative solutions to new challenges.
+                        </p>
+                    </div>
+                    <div>
+                        <p class="mb-4">
+                            Currently, I am contributing at ICICI Prudential as an IT Project Manager, with a passion for continuous learning and growth.
+                        </p>
+                        <p>
+                            My professional journey is driven by a commitment to delivering high-quality results and fostering efficient team environments.
+                        </p>
+                    </div>
+                </div>
+                <div class="flex justify-center mt-6">
+                    <button onclick="generateProfileSummary()" class="primary-button hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-full shadow-lg transition-transform transform hover:scale-105 duration-300 text-sm">
+                        ✨ Generate Profile Summary
+                    </button>
+                </div>
+            </section>
+
+            <!-- Work Experience Section -->
+            <section id="experience" class="mb-12 sm:mb-16 fade-in-up">
+                <h2 class="text-3xl sm:text-4xl font-bold mb-6 sm:mb-8 border-b-4 border-blue-300 pb-2 sm:pb-3 text-center section-header">Work Experience</h2>
+                <div id="work-experience-content" class="grid grid-cols-1 gap-6 sm:gap-8 job-entry">
+                    <!-- Job Entry 1 - ICICIPRUDENTIAL LIFE INSURANCE COMPANY -->
+                    <div class="bg-blue-50 rounded-xl shadow-lg p-5 sm:p-6 transform transition-transform hover:scale-[1.01] hover:shadow-xl duration-300">
+                        <h3 class="text-xl sm:text-2xl font-semibold mb-1 sm:mb-2">ICICIPRUDENTIAL LIFE INSURANCE COMPANY</h3>
+                        <p class="text-lg sm:text-xl mb-1">IT Project Manager</p>
+                        <p class="text-xs sm:text-sm mb-3 sm:mb-4">Oct 2021 - Present</p>
+                        <ul class="list-disc list-inside space-y-1 sm:space-y-2 text-sm sm:text-base">
+                            <li>Managing five critical applications: Email Campaign, Command Center, SMS, Outbound CRM/Tab CRM, and Unicom.</li>
+                            <li>Responsible for the communication section of the company, broadcasting emails, SMS, and WhatsApp messages through these applications.</li>
+                            <li>Successfully completed database up-gradation activity from SQL Version 2012 to 2019 for all application databases within timelines.</li>
+                            <li>Led server migration activity from ICICI Bank data center to ICICI Prudential data center, removing dependency on ICICI Bank DC for Prod, DR & UAT servers.</li>
+                            <li>Interacted with business users, stakeholders, compliance, governance security team, and internal audit team throughout project development and delivery.</li>
+                        </ul>
+                    </div>
+
+                    <!-- Add more job entries as needed -->
+                </div>
+            </section>
+
+            <!-- Skills Section -->
+            <section id="skills" class="mb-12 sm:mb-16 fade-in-up">
+                <h2 class="text-3xl sm:text-4xl font-bold text-blue-700 mb-6 sm:mb-8 border-b-4 border-blue-300 pb-2 sm:pb-3 text-center">Skills</h2>
+                <div class="flex flex-wrap justify-center gap-2 sm:gap-4">
+                    <span class="bg-blue-100 text-blue-800 px-4 py-2 rounded-full text-sm sm:text-lg font-medium shadow-md hover:bg-blue-200 transition-colors duration-200">Java</span>
+                    <span class="bg-blue-100 text-blue-800 px-4 py-2 rounded-full text-sm sm:text-lg font-medium shadow-md hover:bg-blue-200 transition-colors duration-200">SQL</span>
+                    <span class="bg-blue-100 text-blue-800 px-4 py-2 rounded-full text-sm sm:text-lg font-medium shadow-md hover:bg-blue-200 transition-colors duration-200">HTML5</span>
+                    <span class="bg-blue-100 text-blue-800 px-4 py-2 rounded-full text-sm sm:text-lg font-medium shadow-md hover:bg-blue-200 transition-colors duration-200">CSS3</span>
+                    <span class="bg-blue-100 text-blue-800 px-4 py-2 rounded-full text-sm sm:text-lg font-medium shadow-md hover:bg-blue-200 transition-colors duration-200">JavaScript</span>
+                    <span class="bg-blue-100 text-blue-800 px-4 py-2 rounded-full text-sm sm:text-lg font-medium shadow-md hover:bg-blue-200 transition-colors duration-200">XML</span>
+                    <span class="bg-blue-100 text-blue-800 px-4 py-2 rounded-full text-sm sm:text-lg font-medium shadow-md hover:bg-blue-200 transition-colors duration-200">Spring Boot</span>
+                    <span class="bg-blue-100 text-blue-800 px-4 py-2 rounded-full text-sm sm:text-lg font-medium shadow-md hover:bg-blue-200 transition-colors duration-200">AWS</span>
+                    <span class="bg-blue-100 text-blue-800 px-4 py-2 rounded-full text-sm sm:text-lg font-medium shadow-md hover:bg-blue-200 transition-colors duration-200">Problem Solving</span>
+                    <span class="bg-blue-100 text-blue-800 px-4 py-2 rounded-full text-sm sm:text-lg font-medium shadow-md hover:bg-blue-200 transition-colors duration-200">Communication</span>
+                    <span class="bg-blue-100 text-blue-800 px-4 py-2 rounded-full text-sm sm:text-lg font-medium shadow-md hover:bg-blue-200 transition-colors duration-200">Teamwork</span>
+                    <span class="bg-blue-100 text-blue-800 px-4 py-2 rounded-full text-sm sm:text-lg font-medium shadow-md hover:bg-blue-200 transition-colors duration-200">Project Management</span>
+                    <!-- Add more skills as needed based on your resume -->
+                </div>
+            </section>
+
+            <!-- Projects/Portfolio Section with new swipe functionality -->
+            <section id="projects" class="mb-12 sm:mb-16 fade-in-up">
+                <h2 class="text-3xl sm:text-4xl font-bold text-blue-700 mb-6 sm:mb-8 border-b-4 border-blue-300 pb-2 sm:pb-3 text-center">My Projects</h2>
+                <div class="relative w-full overflow-hidden bg-white shadow-2xl rounded-2xl p-6 sm:p-8 md:p-12 max-w-5xl w-full transform transition-all duration-300 hover:scale-[1.01]">
+                    <div id="projects-container" class="flex transition-transform duration-500 ease-in-out hide-scrollbar">
+                        <!-- Project Card 1 -->
+                        <div class="project-card bg-blue-50 rounded-xl shadow-lg overflow-hidden transform transition-transform hover:scale-105 hover:shadow-xl duration-300">
+                            <img src="https://placehold.co/400x250/93c5fd/ffffff?text=Project+1+Image" alt="Project 1" class="w-full h-40 sm:h-52 object-cover">
+                            <div class="p-4 sm:p-6">
+                                <h3 class="text-xl sm:text-2xl font-semibold mb-2 sm:mb-3">Database Up-gradation Project</h3>
+                                <p class="text-sm sm:text-base mb-3 sm:mb-4">Successfully upgraded database from SQL Version 2012 to 2019 for all application databases, ensuring enhanced performance and compatibility.</p>
+                                <a href="#" class="inline-block text-blue-600 hover:underline font-semibold text-base sm:text-lg flex items-center group">
+                                    Learn More
+                                    <svg class="ml-1 sm:ml-2 w-4 h-4 sm:w-5 sm:h-5 transition-transform group-hover:translate-x-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 8l4 4m0 0l-4 4m4-4H3"></path></svg>
+                                </a>
+                            </div>
+                        </div>
+                        
+                        <!-- Project Card 2 -->
+                        <div class="project-card bg-blue-50 rounded-xl shadow-lg overflow-hidden transform transition-transform hover:scale-105 hover:shadow-xl duration-300">
+                            <img src="https://placehold.co/400x250/93c5fd/ffffff?text=Project+2+Image" alt="Project 2" class="w-full h-40 sm:h-52 object-cover">
+                            <div class="p-4 sm:p-6">
+                                <h3 class="text-xl sm:text-2xl font-semibold mb-2 sm:mb-3">Data Center Migration Project</h3>
+                                <p class="text-sm sm:text-base mb-3 sm:mb-4">Led the migration of servers from ICICI Bank to ICICI Prudential data center, eliminating external dependencies for Prod, DR & UAT environments.</p>
+                                <a href="#" class="inline-block text-blue-600 hover:underline font-semibold text-base sm:text-lg flex items-center group">
+                                    Learn More
+                                    <svg class="ml-1 sm:ml-2 w-4 h-4 sm:w-5 sm:h-5 transition-transform group-hover:translate-x-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 8l4 4m0 0l-4 4m4-4H3"></path></svg>
+                                </a>
+                            </div>
+                        </div>
+
+                        <!-- Project Card 3 -->
+                        <div class="project-card bg-blue-50 rounded-xl shadow-lg overflow-hidden transform transition-transform hover:scale-105 hover:shadow-xl duration-300">
+                            <img src="https://placehold.co/400x250/93c5fd/ffffff?text=Project+3+Image" alt="Project 3" class="w-full h-40 sm:h-52 object-cover">
+                                <div class="p-4 sm:p-6">
+                                    <h3 class="text-xl sm:text-2xl font-semibold mb-2 sm:mb-3">Communication Applications Management</h3>
+                                    <p class="text-sm sm:text-base mb-3 sm:mb-4">Managed and ensured smooth operation of key communication applications (Email Campaign, Command Center, SMS, Outbound CRM/Tab CRM, Unicom).</p>
+                                    <a href="#" class="inline-block text-blue-600 hover:underline font-semibold text-base sm:text-lg flex items-center group">
+                                        Learn More
+                                        <svg class="ml-1 sm:ml-2 w-4 h-4 sm:w-5 sm:h-5 transition-transform group-hover:translate-x-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 8l4 4m0 0l-4 4m4-4H3"></path></svg>
+                                    </a>
+                                </div>
+                        </div>
+
+                    </div>
+                    <!-- Navigation Buttons -->
+                    <button onclick="changeProject(-1)" class="absolute top-1/2 left-0 transform -translate-y-1/2 bg-white rounded-full p-2 shadow-lg hover:bg-gray-100 transition-colors z-10">
+                        <svg class="w-6 h-6 text-gray-800" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path></svg>
+                    </button>
+                    <button onclick="changeProject(1)" class="absolute top-1/2 right-0 transform -translate-y-1/2 bg-white rounded-full p-2 shadow-lg hover:bg-gray-100 transition-colors z-10">
+                        <svg class="w-6 h-6 text-gray-800" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
+                    </button>
+                </div>
+            </section>
+
+            <!-- Contact Section -->
+            <section id="contact" class="fade-in-up">
+                <h2 class="text-3xl sm:text-4xl font-bold text-blue-700 mb-6 sm:mb-8 border-b-4 border-blue-300 pb-2 sm:pb-3 text-center">Contact Me</h2>
+                <!-- Contact Form -->
+                <form id="contact-form" class="w-full max-w-lg mx-auto bg-gray-700 p-6 rounded-lg shadow-md">
+                    <div class="mb-4">
+                        <label for="name" class="block text-gray-300 text-sm font-bold mb-2">Your Name</label>
+                        <input type="text" id="name" name="name" class="shadow appearance-none border-none rounded w-full py-2 px-3 text-gray-800 leading-tight focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="Your Name" required>
+                    </div>
+                    <div class="mb-4">
+                        <label for="email" class="block text-gray-300 text-sm font-bold mb-2">Your Email</label>
+                        <input type="email" id="email" name="email" class="shadow appearance-none border-none rounded w-full py-2 px-3 text-gray-800 leading-tight focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="Your Email" required>
+                    </div>
+                    <div class="mb-6">
+                        <label for="message" class="block text-gray-300 text-sm font-bold mb-2">Your Message</label>
+                        <textarea id="message" name="message" rows="4" class="shadow appearance-none border-none rounded w-full py-2 px-3 text-gray-800 leading-tight focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="Your Message" required></textarea>
+                    </div>
+                    <div class="flex items-center justify-between">
+                        <button type="submit" id="submit-btn" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline">
+                            Send Message
+                        </button>
+                    </div>
+                    <div id="status-message" class="mt-4 text-center font-bold"></div>
+                </form>
+                <div class="text-base sm:text-lg text-gray-700 text-center mt-8">
+                    <p class="mb-3 sm:mb-4">I'm always open to new opportunities and collaborations. Feel free to reach out!</p>
+                    <p class="mb-2">Email: <a href="mailto:sanketmangle99@gmail.com" class="text-blue-600 hover:underline font-medium">sanketmangle99@gmail.com</a></p>
+                    <p class="mb-2">Contact: <a href="tel:+917506471414" class="text-blue-600 hover:underline font-medium">+91 7506471414</a></p>
+                    <p class="mb-2">Location: Kanjurmarg, Mumbai</p>
+                    <p>GitHub: <a href="https://github.com/sanketmangle" target="_blank" class="text-blue-600 hover:underline font-medium">github.com/sanketmangle</a></p>
+                    <p>LinkedIn: <a href="https://linkedin.com/in/sanket-mangle-704b50191" target="_blank" class="text-blue-600 hover:underline font-medium">Sanket Mangle's LinkedIn Profile</a></p>
+                    <!-- Add other contact information or social media links here -->
+                </div>
+            </section>
+
+        </div>
+
+        <!-- Footer -->
+        <footer class="mt-8 sm:mt-12 text-gray-600 text-xs sm:text-sm text-center">
+            <p>&copy; 2024 Sanket Mangle. All rights reserved.</p>
+            <p class="mt-1">Designed with <span class="text-red-500">&hearts;</span> using Tailwind CSS</p>
+        </footer>
+    </div>
+    
+    <script>
+        // Smooth scrolling for navigation links
+        document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+            anchor.addEventListener('click', function (e) {
+                e.preventDefault();
+                document.querySelector(this.getAttribute('href')).scrollIntoView({
+                    behavior: 'smooth'
+                });
+            });
+        });
+
+        let currentProjectIndex = 0;
+        const projectsContainer = document.getElementById('projects-container');
+        const projectCards = projectsContainer.getElementsByClassName('project-card');
+        
+        function updateCarousel() {
+            const offset = -currentProjectIndex * 100;
+            projectsContainer.style.transform = `translateX(${offset}%)`;
+        }
+
+        function changeProject(direction) {
+            currentProjectIndex = (currentProjectIndex + direction + projectCards.length) % projectCards.length;
+            updateCarousel();
+        }
+
+        // Add swipe functionality for touch devices
+        let startX = 0;
+        projectsContainer.addEventListener('touchstart', (e) => {
+            startX = e.touches[0].clientX;
+        });
+        
+        projectsContainer.addEventListener('touchend', (e) => {
+            const endX = e.changedTouches[0].clientX;
+            const diff = startX - endX;
+            if (diff > 50) { // Swiped left
+                changeProject(1);
+            } else if (diff < -50) { // Swiped right
+                changeProject(-1);
+            }
+        });
+
+        // Handle contact form submission
+        document.getElementById('contact-form').addEventListener('submit', async function(event) {
+            event.preventDefault();
+
+            const nameInput = document.getElementById('name');
+            const emailInput = document.getElementById('email');
+            const messageInput = document.getElementById('message');
+            const statusMessage = document.getElementById('status-message');
+            const submitBtn = document.getElementById('submit-btn');
+
+            let isValid = true;
+            if (nameInput.value.trim() === '') {
+                statusMessage.textContent = 'Please enter your name.';
+                statusMessage.style.color = 'red';
+                isValid = false;
+            } else if (emailInput.value.trim() === '' || !emailInput.value.includes('@') || !emailInput.value.includes('.')) {
+                statusMessage.textContent = 'Please enter a valid email address.';
+                statusMessage.style.color = 'red';
+                isValid = false;
+            } else if (messageInput.value.trim() === '') {
+                statusMessage.textContent = 'Please enter your message.';
+                statusMessage.style.color = 'red';
+                isValid = false;
+            } else {
+                statusMessage.textContent = '';
+            }
+
+            if (isValid) {
+                submitBtn.disabled = true;
+                submitBtn.textContent = 'Sending...';
+                statusMessage.textContent = 'Sending message...';
+                statusMessage.style.color = 'white';
+
+                const data = {
+                    name: nameInput.value,
+                    email: emailInput.value,
+                    message: messageInput.value,
+                    timestamp: new Date().toISOString()
+                };
+
+                const result = await window.addContact(data);
+                
+                if (result.success) {
+                    statusMessage.textContent = result.message;
+                    statusMessage.style.color = 'lightgreen';
+                    nameInput.value = '';
+                    emailInput.value = '';
+                    messageInput.value = '';
+                } else {
+                    statusMessage.textContent = result.message;
+                    statusMessage.style.color = 'red';
+                }
+
+                submitBtn.disabled = false;
+                submitBtn.textContent = 'Send Message';
+            }
+        });
+
+        // Intersection Observer for scroll animations
+        const sections = document.querySelectorAll('section, footer');
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    entry.target.classList.add('visible');
+                    observer.unobserve(entry.target);
+                }
+            });
+        }, { threshold: 0.1 });
+
+        sections.forEach(section => {
+            observer.observe(section);
+        });
+        
+    </script>
+</body>
+</html>
